@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PPTX Methoden Importer</title>
+  <style>
+    body { font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; background: #f6f7f9; color: #14171f; }
+    .wrap { max-width: 1120px; margin: 40px auto; padding: 0 20px; }
+    .hero { background: white; border: 1px solid #e5e7eb; border-radius: 24px; padding: 28px; box-shadow: 0 10px 30px rgba(16,24,40,.06); }
+    h1 { margin: 0 0 8px; font-size: 30px; }
+    p { color: #5b6472; }
+    .drop { margin-top: 24px; border: 2px dashed #b8c0cc; border-radius: 22px; padding: 34px; text-align: center; background: #fbfcfd; }
+    input { margin-top: 16px; }
+    button { margin-top: 18px; border: 0; background: #111827; color: white; border-radius: 14px; padding: 12px 18px; font-weight: 700; cursor: pointer; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    .grid { display: grid; grid-template-columns: 360px 1fr; gap: 18px; margin-top: 20px; }
+    .card { background: white; border: 1px solid #e5e7eb; border-radius: 20px; padding: 20px; box-shadow: 0 8px 24px rgba(16,24,40,.04); }
+    .tag { display: inline-block; background: #eef2ff; color: #3730a3; border-radius: 999px; padding: 6px 10px; font-size: 13px; margin: 4px 4px 0 0; }
+    .slide { border-top: 1px solid #edf0f3; padding: 16px 0; }
+    .slide:first-child { border-top: 0; }
+    .muted { color: #667085; font-size: 14px; }
+    pre { background: #0b1020; color: #e5e7eb; padding: 16px; border-radius: 16px; overflow: auto; max-height: 420px; }
+    .error { color: #b42318; background: #fef3f2; padding: 12px; border-radius: 12px; margin-top: 16px; display: none; }
+    .loading { display: none; margin-top: 16px; color: #344054; font-weight: 700; }
+    ul { margin: 8px 0 0 20px; padding: 0; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <h1>PPTX Methoden Importer</h1>
+      <p>Lade eine PowerPoint hoch. Die App liest Folientitel, Texte, Notizen, Keywords und erste Methodenvorschläge aus.</p>
+      <div class="drop">
+        <strong>.pptx hochladen</strong><br />
+        <input id="file" type="file" accept=".pptx" />
+        <br />
+        <button id="upload">Import starten</button>
+        <div id="loading" class="loading">Analysiere PowerPoint...</div>
+        <div id="error" class="error"></div>
+      </div>
+    </section>
+
+    <section id="result" class="grid" style="display:none;">
+      <aside class="card">
+        <h2>Methoden-Vorschlag</h2>
+        <h3 id="suggestedTitle"></h3>
+        <p id="description"></p>
+        <div><strong>Kategorien</strong><div id="categories"></div></div>
+        <br />
+        <div><strong>Tags</strong><div id="tags"></div></div>
+        <p class="muted" id="meta"></p>
+      </aside>
+      <section class="card">
+        <h2>Ausgelesene Folien</h2>
+        <div id="slides"></div>
+        <h2>Rohdaten JSON</h2>
+        <pre id="json"></pre>
+      </section>
+    </section>
+  </main>
+
+<script>
+const fileInput = document.getElementById('file');
+const uploadBtn = document.getElementById('upload');
+const loading = document.getElementById('loading');
+const errorBox = document.getElementById('error');
+const result = document.getElementById('result');
+
+function tags(container, items) {
+  container.innerHTML = '';
+  (items || []).forEach(item => {
+    const span = document.createElement('span');
+    span.className = 'tag';
+    span.textContent = item;
+    container.appendChild(span);
+  });
+}
+
+uploadBtn.addEventListener('click', async () => {
+  const file = fileInput.files[0];
+  if (!file) { errorBox.textContent = 'Bitte zuerst eine .pptx Datei auswählen.'; errorBox.style.display = 'block'; return; }
+  const form = new FormData();
+  form.append('file', file);
+  loading.style.display = 'block';
+  errorBox.style.display = 'none';
+  result.style.display = 'none';
+  uploadBtn.disabled = true;
+
+  try {
+    const res = await fetch('/api/import-pptx', { method: 'POST', body: form });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Upload fehlgeschlagen');
+
+    document.getElementById('suggestedTitle').textContent = data.method_suggestion.suggested_title;
+    document.getElementById('description').textContent = data.method_suggestion.short_description;
+    tags(document.getElementById('categories'), data.method_suggestion.suggested_categories);
+    tags(document.getElementById('tags'), data.method_suggestion.suggested_tags);
+    document.getElementById('meta').textContent = `${data.filename} · ${data.slide_count} Folien`;
+
+    const slides = document.getElementById('slides');
+    slides.innerHTML = '';
+    data.slides.forEach(s => {
+      const div = document.createElement('div');
+      div.className = 'slide';
+      div.innerHTML = `
+        <h3>Folie ${s.slide_number}: ${s.title}</h3>
+        <p class="muted">Keywords: ${(s.keywords || []).join(', ') || 'keine'} · Bilder: ${s.image_count}</p>
+        ${s.bullets?.length ? `<strong>Schlüsselelemente</strong><ul>${s.bullets.map(b => `<li>${b}</li>`).join('')}</ul>` : '<p class="muted">Keine längeren Textelemente erkannt.</p>'}
+        ${s.notes ? `<p><strong>Notizen:</strong> ${s.notes}</p>` : ''}
+      `;
+      slides.appendChild(div);
+    });
+    document.getElementById('json').textContent = JSON.stringify(data, null, 2);
+    result.style.display = 'grid';
+  } catch (err) {
+    errorBox.textContent = err.message;
+    errorBox.style.display = 'block';
+  } finally {
+    loading.style.display = 'none';
+    uploadBtn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,467 @@
+import { useState } from 'react';
+import { Upload, FileText, AlertCircle, CheckCircle, ArrowLeft, Plus, Sparkles } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { generateKeywordsString } from '../utils/keywordGenerator';
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const API_BASE = `${SUPABASE_URL}/functions/v1/make-server-aac39e77`;
+
+export function UploadPage() {
+  const navigate = useNavigate();
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Manual method input form
+  const [showManualForm, setShowManualForm] = useState(false);
+  const [methodData, setMethodData] = useState({
+    title: '',
+    category: 'Problemanalyse',
+    description: '',
+    goal: '',
+    duration: '30-60 Min',
+    participants: '4-8 Personen',
+    keywords: '',
+    steps: '',
+    tips: '',
+    examples: ''
+  });
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+      setError(null);
+      setUploadSuccess(false);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!file) {
+      setError('Bitte wählen Sie eine PowerPoint-Datei aus.');
+      return;
+    }
+
+    setUploading(true);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch(`${API_BASE}/upload-pptx`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+        },
+        body: formData
+      });
+
+      // Check if response is valid JSON
+      if (!response.ok || !response.headers.get('content-type')?.includes('application/json')) {
+        throw new Error('Backend nicht verfügbar. Bitte deployen Sie zuerst die Supabase Edge Function.');
+      }
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || data.details || 'Upload fehlgeschlagen');
+      }
+
+      // Methode wurde automatisch erstellt!
+      alert(`✅ PowerPoint erfolgreich analysiert!\n\n📝 Methode: ${data.method?.title}\n🏷️ Kategorie: ${data.method?.category}\n📌 Keywords: ${data.method?.keywords?.slice(0, 5).join(', ')}\n\nDie Methode wurde automatisch zum Werkzeugkasten hinzugefügt!`);
+
+      // Zurück zur Startseite
+      navigate('/');
+
+    } catch (err: any) {
+      setError(err.message || 'Fehler beim Hochladen der Datei.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleGenerateKeywords = () => {
+    // Automatische Keyword-Generierung basierend auf den eingegebenen Daten
+    const generatedKeywords = generateKeywordsString({
+      title: methodData.title,
+      description: methodData.description,
+      goal: methodData.goal,
+      steps: methodData.steps,
+      category: methodData.category
+    });
+
+    setMethodData({ ...methodData, keywords: generatedKeywords });
+  };
+
+  const handleCreateMethod = async () => {
+    if (!methodData.title || !methodData.description) {
+      setError('Titel und Beschreibung sind erforderlich.');
+      return;
+    }
+
+    setUploading(true);
+    setError(null);
+
+    const newMethod = {
+      id: `method-${Date.now()}`,
+      title: methodData.title,
+      category: methodData.category,
+      description: methodData.description,
+      goal: methodData.goal,
+      duration: methodData.duration,
+      participants: methodData.participants,
+      // KEYWORDS: Kommagetrennte Eingabe wird in ein Array umgewandelt
+      // "Kreativität, Innovation, Brainstorming" → ['Kreativität', 'Innovation', 'Brainstorming']
+      keywords: methodData.keywords.split(',').map(k => k.trim()).filter(Boolean),
+      steps: methodData.steps.split('\n').filter(Boolean).map((step, i) => ({
+        title: `Schritt ${i + 1}`,
+        description: step.trim()
+      })),
+      tips: methodData.tips.split('\n').map(t => t.trim()).filter(Boolean),
+      examples: methodData.examples.split('\n').map(e => e.trim()).filter(Boolean),
+      imageUrl: '/grafik-1.png',
+      contactPerson: {
+        name: 'Ansprechpartner',
+        role: 'Methodenexperte',
+        email: 'kontakt@beispiel.de'
+      },
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      // Versuche zuerst Backend-Upload
+      const response = await fetch(`${API_BASE}/methods`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(newMethod)
+      });
+
+      // Check if response is valid JSON
+      if (!response.ok || !response.headers.get('content-type')?.includes('application/json')) {
+        // Backend nicht verfügbar - speichere lokal
+        const localMethods = JSON.parse(localStorage.getItem('customMethods') || '[]');
+        localMethods.push(newMethod);
+        localStorage.setItem('customMethods', JSON.stringify(localMethods));
+
+        alert('✅ Methode lokal gespeichert!\n\n⚠️ Backend nicht verfügbar - die Methode wurde nur lokal gespeichert.\nUm sie dauerhaft zu speichern, deployen Sie die Supabase Edge Function.');
+        navigate('/');
+        return;
+      }
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Methode konnte nicht erstellt werden');
+      }
+
+      // Backend-Upload erfolgreich
+      alert('✅ Methode erfolgreich hinzugefügt!');
+      navigate('/');
+
+    } catch (err: any) {
+      // Bei Fehler lokal speichern
+      const localMethods = JSON.parse(localStorage.getItem('customMethods') || '[]');
+      localMethods.push(newMethod);
+      localStorage.setItem('customMethods', JSON.stringify(localMethods));
+
+      alert('✅ Methode lokal gespeichert!\n\n⚠️ Fehler beim Backend-Upload - die Methode wurde nur lokal gespeichert.');
+      navigate('/');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
+          >
+            <ArrowLeft size={20} />
+            <span>Zurück zum Werkzeugkasten</span>
+          </Link>
+          <h1 className="text-2xl font-bold">Neue Methode hinzufügen</h1>
+          <p className="text-gray-600 mt-2">
+            Erstellen Sie eine neue Methode für Ihren Werkzeugkasten.
+          </p>
+        </div>
+      </header>
+
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-white border border-gray-200 rounded-lg p-8 shadow-sm">
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center">
+            <Upload className="mx-auto mb-4 text-gray-400" size={48} />
+            <h3 className="text-lg font-semibold mb-2">PowerPoint automatisch analysieren</h3>
+            <p className="text-gray-600 mb-6">
+              🤖 KI analysiert automatisch: Titel, Beschreibung, Schritte, Keywords & mehr!
+            </p>
+
+            <input
+              type="file"
+              accept=".pptx"
+              onChange={handleFileChange}
+              className="hidden"
+              id="file-upload"
+            />
+            <label
+              htmlFor="file-upload"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors cursor-pointer"
+            >
+              <FileText size={20} />
+              <span>PowerPoint auswählen</span>
+            </label>
+
+            {file && (
+              <div className="mt-4 text-sm text-gray-600">
+                Ausgewählt: <span className="font-medium">{file.name}</span>
+              </div>
+            )}
+          </div>
+
+          {file && (
+            <button
+              onClick={handleUpload}
+              disabled={uploading}
+              className="w-full mt-6 px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {uploading ? (
+                <>
+                  <span className="animate-spin">⏳</span>
+                  <span>Analysiere PowerPoint...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles size={20} />
+                  <span>🤖 Automatisch analysieren & erstellen</span>
+                </>
+              )}
+            </button>
+          )}
+
+          {error && (
+            <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+              <AlertCircle className="text-red-600 flex-shrink-0" size={20} />
+              <p className="text-red-800 text-sm">{error}</p>
+            </div>
+          )}
+
+          {!file && (
+            <div className="mt-8 text-center">
+              <button
+                onClick={() => setShowManualForm(!showManualForm)}
+                className="text-gray-600 hover:text-gray-900 underline text-sm"
+              >
+                {showManualForm ? 'PowerPoint hochladen' : 'Oder manuell eingeben'}
+              </button>
+            </div>
+          )}
+
+          {showManualForm && (
+            <div className="mt-8 bg-white border border-gray-200 rounded-lg p-6">
+              <h3 className="font-semibold text-lg mb-4">Methodendetails eingeben</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Titel *
+                  </label>
+                  <input
+                    type="text"
+                    value={methodData.title}
+                    onChange={(e) => setMethodData({ ...methodData, title: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+                    placeholder="z.B. SCAMPER-Methode"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Kategorie *
+                  </label>
+                  <select
+                    value={methodData.category}
+                    onChange={(e) => setMethodData({ ...methodData, category: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  >
+                    <option>Ideenfindung</option>
+                    <option>Problemanalyse</option>
+                    <option>Entscheidungsfindung</option>
+                    <option>Teamarbeit</option>
+                    <option>Planung</option>
+                    <option>Kommunikation</option>
+                    <option>Selbstmanagement</option>
+                    <option>Erwartungsmanagement</option>
+                    <option>Konfliktlösung</option>
+                    <option>Stakeholder Management</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Beschreibung *
+                  </label>
+                  <textarea
+                    value={methodData.description}
+                    onChange={(e) => setMethodData({ ...methodData, description: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+                    rows={3}
+                    placeholder="Kurze Beschreibung der Methode..."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Ziel
+                  </label>
+                  <textarea
+                    value={methodData.goal}
+                    onChange={(e) => setMethodData({ ...methodData, goal: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+                    rows={2}
+                    placeholder="Was soll mit dieser Methode erreicht werden?"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Dauer
+                    </label>
+                    <input
+                      type="text"
+                      value={methodData.duration}
+                      onChange={(e) => setMethodData({ ...methodData, duration: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+                      placeholder="z.B. 30-60 Min"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Teilnehmer
+                    </label>
+                    <input
+                      type="text"
+                      value={methodData.participants}
+                      onChange={(e) => setMethodData({ ...methodData, participants: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+                      placeholder="z.B. 4-8 Personen"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Schritte (ein Schritt pro Zeile)
+                  </label>
+                  <textarea
+                    value={methodData.steps}
+                    onChange={(e) => setMethodData({ ...methodData, steps: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 font-mono text-sm"
+                    rows={5}
+                    placeholder="Problem definieren&#10;Ursachen sammeln&#10;Lösungen entwickeln"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tipps (ein Tipp pro Zeile)
+                  </label>
+                  <textarea
+                    value={methodData.tips}
+                    onChange={(e) => setMethodData({ ...methodData, tips: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 font-mono text-sm"
+                    rows={3}
+                    placeholder="Tipp 1&#10;Tipp 2"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Keywords (kommagetrennt)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleGenerateKeywords}
+                      disabled={!methodData.title || !methodData.description}
+                      className="inline-flex items-center gap-1 px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Keywords automatisch generieren"
+                    >
+                      <Sparkles size={14} />
+                      <span>Automatisch generieren</span>
+                    </button>
+                  </div>
+                  {/* KEYWORDS: Diese werden für die Suchfunktion verwendet!
+                      Je mehr relevante Keywords, desto besser ist die Methode auffindbar.
+                      Beispiele: Fachbegriffe, alternative Bezeichnungen, verwandte Konzepte */}
+                  <input
+                    type="text"
+                    value={methodData.keywords}
+                    onChange={(e) => setMethodData({ ...methodData, keywords: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+                    placeholder="Kreativität, Innovation, Brainstorming"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    💡 Tipp: Klicken Sie auf "Automatisch generieren" oder geben Sie eigene Keywords ein
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Beispiele (ein Beispiel pro Zeile)
+                  </label>
+                  <textarea
+                    value={methodData.examples}
+                    onChange={(e) => setMethodData({ ...methodData, examples: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 font-mono text-sm"
+                    rows={3}
+                    placeholder="Beispiel 1&#10;Beispiel 2"
+                  />
+                </div>
+
+                <button
+                  onClick={handleCreateMethod}
+                  disabled={uploading || !methodData.title || !methodData.description}
+                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Plus size={20} />
+                  <span>{uploading ? 'Wird hinzugefügt...' : 'Methode zum Werkzeugkasten hinzufügen'}</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-8 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-6">
+          <h3 className="font-semibold text-blue-900 mb-3">🤖 KI-Powered Automatische Analyse</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-800">
+            <div>
+              <p className="font-semibold mb-2">✨ Was wird automatisch extrahiert:</p>
+              <ul className="space-y-1">
+                <li>✅ Titel & Beschreibung</li>
+                <li>✅ Kategorie-Erkennung</li>
+                <li>✅ Schritte aus Bullet-Points</li>
+                <li>✅ Automatische Keywords</li>
+              </ul>
+            </div>
+            <div>
+              <p className="font-semibold mb-2">🎯 Vorteile:</p>
+              <ul className="space-y-1">
+                <li>⚡ Blitzschnell - in Sekunden fertig</li>
+                <li>🆓 100% kostenlos - keine API-Kosten</li>
+                <li>🔒 Sicher - alles auf Ihrem Server</li>
+                <li>✏️ Nachbearbeitung möglich</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
