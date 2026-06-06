@@ -12,6 +12,7 @@ export function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [uploadedPdfUrl, setUploadedPdfUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Manual method input form
@@ -31,26 +32,51 @@ export function UploadPage() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+      const selectedFile = e.target.files[0];
+
+      const isPdf =
+        selectedFile.type === 'application/pdf' ||
+        selectedFile.name.toLowerCase().endsWith('.pdf');
+
+      if (!isPdf) {
+        setFile(null);
+        setError('Bitte wählen Sie nur eine PDF-Datei aus.');
+        setUploadSuccess(false);
+        setUploadedPdfUrl(null);
+        return;
+      }
+
+      setFile(selectedFile);
       setError(null);
       setUploadSuccess(false);
+      setUploadedPdfUrl(null);
     }
   };
 
   const handleUpload = async () => {
     if (!file) {
-      setError('Bitte wählen Sie eine PowerPoint-Datei aus.');
+      setError('Bitte wählen Sie eine PDF-Datei aus.');
+      return;
+    }
+
+    const isPdf =
+      file.type === 'application/pdf' ||
+      file.name.toLowerCase().endsWith('.pdf');
+
+    if (!isPdf) {
+      setError('Bitte wählen Sie nur eine PDF-Datei aus.');
       return;
     }
 
     setUploading(true);
     setError(null);
+    setUploadSuccess(false);
 
     try {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch(`${API_BASE}/upload-pptx`, {
+      const response = await fetch(`${API_BASE}/upload-pdf`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
@@ -58,32 +84,29 @@ export function UploadPage() {
         body: formData
       });
 
-      // Check if response is valid JSON
-      if (!response.ok || !response.headers.get('content-type')?.includes('application/json')) {
+      if (!response.headers.get('content-type')?.includes('application/json')) {
         throw new Error('Backend nicht verfügbar. Bitte deployen Sie zuerst die Supabase Edge Function.');
       }
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || data.details || 'Upload fehlgeschlagen');
+        throw new Error(data.error || data.details || 'PDF-Upload fehlgeschlagen');
       }
 
-      // Methode wurde automatisch erstellt!
-      alert(`✅ PowerPoint erfolgreich analysiert!\n\n📝 Methode: ${data.method?.title}\n🏷️ Kategorie: ${data.method?.category}\n📌 Keywords: ${data.method?.keywords?.slice(0, 5).join(', ')}\n\nDie Methode wurde automatisch zum Werkzeugkasten hinzugefügt!`);
+      setUploadSuccess(true);
+      setUploadedPdfUrl(data.fileUrl || null);
 
-      // Zurück zur Startseite
-      navigate('/');
+      alert(`✅ PDF erfolgreich hochgeladen!\n\n📄 Datei: ${data.fileName}\n\nDie PDF wurde gespeichert.`);
 
     } catch (err: any) {
-      setError(err.message || 'Fehler beim Hochladen der Datei.');
+      setError(err.message || 'Fehler beim Hochladen der PDF-Datei.');
     } finally {
       setUploading(false);
     }
   };
 
   const handleGenerateKeywords = () => {
-    // Automatische Keyword-Generierung basierend auf den eingegebenen Daten
     const generatedKeywords = generateKeywordsString({
       title: methodData.title,
       description: methodData.description,
@@ -112,8 +135,6 @@ export function UploadPage() {
       goal: methodData.goal,
       duration: methodData.duration,
       participants: methodData.participants,
-      // KEYWORDS: Kommagetrennte Eingabe wird in ein Array umgewandelt
-      // "Kreativität, Innovation, Brainstorming" → ['Kreativität', 'Innovation', 'Brainstorming']
       keywords: methodData.keywords.split(',').map(k => k.trim()).filter(Boolean),
       steps: methodData.steps.split('\n').filter(Boolean).map((step, i) => ({
         title: `Schritt ${i + 1}`,
@@ -122,6 +143,7 @@ export function UploadPage() {
       tips: methodData.tips.split('\n').map(t => t.trim()).filter(Boolean),
       examples: methodData.examples.split('\n').map(e => e.trim()).filter(Boolean),
       imageUrl: '/grafik-1.png',
+      pdfUrl: uploadedPdfUrl,
       contactPerson: {
         name: 'Ansprechpartner',
         role: 'Methodenexperte',
@@ -131,7 +153,6 @@ export function UploadPage() {
     };
 
     try {
-      // Versuche zuerst Backend-Upload
       const response = await fetch(`${API_BASE}/methods`, {
         method: 'POST',
         headers: {
@@ -141,14 +162,12 @@ export function UploadPage() {
         body: JSON.stringify(newMethod)
       });
 
-      // Check if response is valid JSON
-      if (!response.ok || !response.headers.get('content-type')?.includes('application/json')) {
-        // Backend nicht verfügbar - speichere lokal
+      if (!response.headers.get('content-type')?.includes('application/json')) {
         const localMethods = JSON.parse(localStorage.getItem('customMethods') || '[]');
         localMethods.push(newMethod);
         localStorage.setItem('customMethods', JSON.stringify(localMethods));
 
-        alert('✅ Methode lokal gespeichert!\n\n⚠️ Backend nicht verfügbar - die Methode wurde nur lokal gespeichert.\nUm sie dauerhaft zu speichern, deployen Sie die Supabase Edge Function.');
+        alert('✅ Methode lokal gespeichert!\n\n⚠️ Backend nicht verfügbar - die Methode wurde nur lokal gespeichert.');
         navigate('/');
         return;
       }
@@ -159,12 +178,10 @@ export function UploadPage() {
         throw new Error(data.error || 'Methode konnte nicht erstellt werden');
       }
 
-      // Backend-Upload erfolgreich
       alert('✅ Methode erfolgreich hinzugefügt!');
       navigate('/');
 
     } catch (err: any) {
-      // Bei Fehler lokal speichern
       const localMethods = JSON.parse(localStorage.getItem('customMethods') || '[]');
       localMethods.push(newMethod);
       localStorage.setItem('customMethods', JSON.stringify(localMethods));
@@ -198,24 +215,25 @@ export function UploadPage() {
         <div className="bg-white border border-gray-200 rounded-lg p-8 shadow-sm">
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center">
             <Upload className="mx-auto mb-4 text-gray-400" size={48} />
-            <h3 className="text-lg font-semibold mb-2">PowerPoint automatisch analysieren</h3>
+            <h3 className="text-lg font-semibold mb-2">PDF hochladen</h3>
             <p className="text-gray-600 mb-6">
-              🤖 KI analysiert automatisch: Titel, Beschreibung, Schritte, Keywords & mehr!
+              Laden Sie eine PDF-Datei hoch. Danach können Sie die Methode manuell ergänzen.
             </p>
 
             <input
               type="file"
-              accept=".pptx"
+              accept="application/pdf,.pdf"
               onChange={handleFileChange}
               className="hidden"
               id="file-upload"
             />
+
             <label
               htmlFor="file-upload"
               className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors cursor-pointer"
             >
               <FileText size={20} />
-              <span>PowerPoint auswählen</span>
+              <span>PDF auswählen</span>
             </label>
 
             {file && (
@@ -234,15 +252,25 @@ export function UploadPage() {
               {uploading ? (
                 <>
                   <span className="animate-spin">⏳</span>
-                  <span>Analysiere PowerPoint...</span>
+                  <span>PDF wird hochgeladen...</span>
                 </>
               ) : (
                 <>
-                  <Sparkles size={20} />
-                  <span>🤖 Automatisch analysieren & erstellen</span>
+                  <Upload size={20} />
+                  <span>PDF hochladen</span>
                 </>
               )}
             </button>
+          )}
+
+          {uploadSuccess && (
+            <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
+              <CheckCircle className="text-green-600 flex-shrink-0" size={20} />
+              <div className="text-green-800 text-sm">
+                <p className="font-medium">PDF erfolgreich hochgeladen.</p>
+                <p>Sie können jetzt unten die Methodendetails manuell eintragen.</p>
+              </div>
+            </div>
           )}
 
           {error && (
@@ -252,20 +280,19 @@ export function UploadPage() {
             </div>
           )}
 
-          {!file && (
-            <div className="mt-8 text-center">
-              <button
-                onClick={() => setShowManualForm(!showManualForm)}
-                className="text-gray-600 hover:text-gray-900 underline text-sm"
-              >
-                {showManualForm ? 'PowerPoint hochladen' : 'Oder manuell eingeben'}
-              </button>
-            </div>
-          )}
+          <div className="mt-8 text-center">
+            <button
+              onClick={() => setShowManualForm(!showManualForm)}
+              className="text-gray-600 hover:text-gray-900 underline text-sm"
+            >
+              {showManualForm ? 'Manuelle Eingabe ausblenden' : 'Methodendetails manuell eingeben'}
+            </button>
+          </div>
 
           {showManualForm && (
             <div className="mt-8 bg-white border border-gray-200 rounded-lg p-6">
               <h3 className="font-semibold text-lg mb-4">Methodendetails eingeben</h3>
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -341,6 +368,7 @@ export function UploadPage() {
                       placeholder="z.B. 30-60 Min"
                     />
                   </div>
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Teilnehmer
@@ -397,9 +425,7 @@ export function UploadPage() {
                       <span>Automatisch generieren</span>
                     </button>
                   </div>
-                  {/* KEYWORDS: Diese werden für die Suchfunktion verwendet!
-                      Je mehr relevante Keywords, desto besser ist die Methode auffindbar.
-                      Beispiele: Fachbegriffe, alternative Bezeichnungen, verwandte Konzepte */}
+
                   <input
                     type="text"
                     value={methodData.keywords}
@@ -407,6 +433,7 @@ export function UploadPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
                     placeholder="Kreativität, Innovation, Brainstorming"
                   />
+
                   <p className="text-xs text-gray-500 mt-1">
                     💡 Tipp: Klicken Sie auf "Automatisch generieren" oder geben Sie eigene Keywords ein
                   </p>
@@ -439,24 +466,26 @@ export function UploadPage() {
         </div>
 
         <div className="mt-8 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-6">
-          <h3 className="font-semibold text-blue-900 mb-3">🤖 KI-Powered Automatische Analyse</h3>
+          <h3 className="font-semibold text-blue-900 mb-3">📄 PDF-Upload</h3>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-800">
             <div>
-              <p className="font-semibold mb-2">✨ Was wird automatisch extrahiert:</p>
+              <p className="font-semibold mb-2">Was möglich ist:</p>
               <ul className="space-y-1">
-                <li>✅ Titel & Beschreibung</li>
-                <li>✅ Kategorie-Erkennung</li>
-                <li>✅ Schritte aus Bullet-Points</li>
-                <li>✅ Automatische Keywords</li>
+                <li>✅ PDF-Dateien hochladen</li>
+                <li>✅ Datei im Supabase Storage speichern</li>
+                <li>✅ Methode manuell ergänzen</li>
+                <li>✅ Keywords automatisch aus Formular generieren</li>
               </ul>
             </div>
+
             <div>
-              <p className="font-semibold mb-2">🎯 Vorteile:</p>
+              <p className="font-semibold mb-2">Hinweis:</p>
               <ul className="space-y-1">
-                <li>⚡ Blitzschnell - in Sekunden fertig</li>
-                <li>🆓 100% kostenlos - keine API-Kosten</li>
-                <li>🔒 Sicher - alles auf Ihrem Server</li>
-                <li>✏️ Nachbearbeitung möglich</li>
+                <li>ℹ️ Keine PowerPoint-Analyse mehr</li>
+                <li>ℹ️ Kein ZIP/PPTX-Parser mehr nötig</li>
+                <li>ℹ️ Upload läuft über /upload-pdf</li>
+                <li>ℹ️ Danach Methode manuell erstellen</li>
               </ul>
             </div>
           </div>
