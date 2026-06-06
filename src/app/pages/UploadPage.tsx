@@ -464,32 +464,6 @@ export function UploadPage() {
             </div>
           )}
         </div>
-
-        <div className="mt-8 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-6">
-          <h3 className="font-semibold text-blue-900 mb-3">📄 PDF-Upload</h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-800">
-            <div>
-              <p className="font-semibold mb-2">Was möglich ist:</p>
-              <ul className="space-y-1">
-                <li>✅ PDF-Dateien hochladen</li>
-                <li>✅ Datei im Supabase Storage speichern</li>
-                <li>✅ Methode manuell ergänzen</li>
-                <li>✅ Keywords automatisch aus Formular generieren</li>
-              </ul>
-            </div>
-
-            <div>
-              <p className="font-semibold mb-2">Hinweis:</p>
-              <ul className="space-y-1">
-                <li>ℹ️ Keine PowerPoint-Analyse mehr</li>
-                <li>ℹ️ Kein ZIP/PPTX-Parser mehr nötig</li>
-                <li>ℹ️ Upload läuft über /upload-pdf</li>
-                <li>ℹ️ Danach Methode manuell erstellen</li>
-              </ul>
-            </div>
-          </div>
-        </div>
       </main>
     </div>
   );
