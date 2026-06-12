@@ -38,9 +38,10 @@ export function UploadPage() {
   });
 
   const inputClass =
-    'w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-white';
+    'w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder-slate-500 dark:focus:ring-white';
 
-  const labelClass = 'mb-1 block text-sm font-medium text-slate-300';
+  const labelClass =
+    'mb-1 block text-sm font-medium text-gray-700 dark:text-slate-300';
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -111,7 +112,9 @@ export function UploadPage() {
       setUploadSuccess(true);
       setUploadedPdfUrl(data.fileUrl || null);
 
-      alert(`✅ PDF erfolgreich hochgeladen!\n\n📄 Datei: ${data.fileName}\n\nDie PDF wurde gespeichert.`);
+      alert(
+        `✅ PDF erfolgreich hochgeladen!\n\n📄 Datei: ${data.fileName}\n\nDie PDF wurde gespeichert.`
+      );
     } catch (err: any) {
       setError(err.message || 'Fehler beim Hochladen der PDF-Datei.');
     } finally {
@@ -222,33 +225,37 @@ export function UploadPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      <header className="border-b border-slate-800 bg-slate-950">
+    <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-slate-950 dark:text-slate-100">
+      <header className="border-b border-gray-200 bg-white dark:border-slate-800 dark:bg-slate-950">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <Link
             to="/"
-            className="mb-4 inline-flex items-center gap-2 text-slate-400 hover:text-white"
+            className="mb-4 inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white"
           >
             <ArrowLeft size={20} />
             <span>Zurück zum Werkzeugkasten</span>
           </Link>
 
-          <h1 className="text-2xl font-bold text-white">Neue Methode hinzufügen</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Neue Methode hinzufügen
+          </h1>
 
-          <p className="mt-2 text-slate-400">
+          <p className="mt-2 text-gray-600 dark:text-slate-400">
             Erstellen Sie eine neue Methode für Ihren Werkzeugkasten.
           </p>
         </div>
       </header>
 
       <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="rounded-lg border border-slate-800 bg-slate-900 p-8 shadow-sm">
-          <div className="rounded-lg border-2 border-dashed border-slate-700 p-12 text-center">
-            <Upload className="mx-auto mb-4 text-slate-400" size={48} />
+        <div className="rounded-lg border border-gray-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="rounded-lg border-2 border-dashed border-gray-300 p-12 text-center dark:border-slate-700">
+            <Upload className="mx-auto mb-4 text-gray-400 dark:text-slate-400" size={48} />
 
-            <h3 className="mb-2 text-lg font-semibold text-white">PDF hochladen</h3>
+            <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
+              PDF hochladen
+            </h3>
 
-            <p className="mb-6 text-slate-400">
+            <p className="mb-6 text-gray-600 dark:text-slate-400">
               Laden Sie eine PDF-Datei hoch. Danach können Sie die Methode manuell ergänzen.
             </p>
 
@@ -262,15 +269,16 @@ export function UploadPage() {
 
             <label
               htmlFor="file-upload"
-              className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-white px-6 py-3 text-slate-950 transition-colors hover:bg-slate-200"
+              className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-gray-900 px-6 py-3 text-white transition-colors hover:bg-gray-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
             >
               <FileText size={20} />
               <span>PDF auswählen</span>
             </label>
 
             {file && (
-              <div className="mt-4 text-sm text-slate-400">
-                Ausgewählt: <span className="font-medium text-white">{file.name}</span>
+              <div className="mt-4 text-sm text-gray-600 dark:text-slate-400">
+                Ausgewählt:{' '}
+                <span className="font-medium text-gray-900 dark:text-white">{file.name}</span>
               </div>
             )}
           </div>
@@ -279,7 +287,7 @@ export function UploadPage() {
             <button
               onClick={handleUpload}
               disabled={uploading}
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-white px-6 py-3 text-slate-950 transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-gray-900 px-6 py-3 text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
             >
               {uploading ? (
                 <>
@@ -296,10 +304,10 @@ export function UploadPage() {
           )}
 
           {uploadSuccess && (
-            <div className="mt-6 flex items-start gap-3 rounded-lg border border-green-700 bg-green-950 p-4">
-              <CheckCircle className="flex-shrink-0 text-green-400" size={20} />
+            <div className="mt-6 flex items-start gap-3 rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-700 dark:bg-green-950">
+              <CheckCircle className="flex-shrink-0 text-green-600 dark:text-green-400" size={20} />
 
-              <div className="text-sm text-green-200">
+              <div className="text-sm text-green-800 dark:text-green-200">
                 <p className="font-medium">PDF erfolgreich hochgeladen.</p>
                 <p>Sie können jetzt unten die Methodendetails manuell eintragen.</p>
               </div>
@@ -307,24 +315,26 @@ export function UploadPage() {
           )}
 
           {error && (
-            <div className="mt-6 flex items-start gap-3 rounded-lg border border-red-700 bg-red-950 p-4">
-              <AlertCircle className="flex-shrink-0 text-red-400" size={20} />
-              <p className="text-sm text-red-200">{error}</p>
+            <div className="mt-6 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-700 dark:bg-red-950">
+              <AlertCircle className="flex-shrink-0 text-red-600 dark:text-red-400" size={20} />
+              <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
             </div>
           )}
 
           <div className="mt-8 text-center">
             <button
               onClick={() => setShowManualForm(!showManualForm)}
-              className="text-sm text-slate-400 underline hover:text-white"
+              className="text-sm text-gray-600 underline hover:text-gray-900 dark:text-slate-400 dark:hover:text-white"
             >
               {showManualForm ? 'Manuelle Eingabe ausblenden' : 'Methodendetails manuell eingeben'}
             </button>
           </div>
 
           {showManualForm && (
-            <div className="mt-8 rounded-lg border border-slate-800 bg-slate-950 p-6">
-              <h3 className="mb-4 text-lg font-semibold text-white">Methodendetails eingeben</h3>
+            <div className="mt-8 rounded-lg border border-gray-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
+              <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+                Methodendetails eingeben
+              </h3>
 
               <div className="space-y-4">
                 <div>
@@ -430,7 +440,7 @@ export function UploadPage() {
 
                 <div>
                   <div className="mb-1 flex items-center justify-between">
-                    <label className="block text-sm font-medium text-slate-300">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">
                       Keywords, kommagetrennt
                     </label>
 
@@ -438,7 +448,7 @@ export function UploadPage() {
                       type="button"
                       onClick={handleGenerateKeywords}
                       disabled={!methodData.title || !methodData.description}
-                      className="inline-flex items-center gap-1 rounded bg-slate-800 px-3 py-1 text-xs text-slate-200 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex items-center gap-1 rounded bg-gray-100 px-3 py-1 text-xs text-gray-700 transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                       title="Keywords automatisch generieren"
                     >
                       <Sparkles size={14} />
@@ -454,7 +464,7 @@ export function UploadPage() {
                     placeholder="Kreativität, Innovation, Brainstorming"
                   />
 
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-xs text-gray-500 dark:text-slate-500">
                     💡 Tipp: Klicken Sie auf "Automatisch generieren" oder geben Sie eigene Keywords ein.
                   </p>
                 </div>
@@ -473,10 +483,12 @@ export function UploadPage() {
                 <button
                   onClick={handleCreateMethod}
                   disabled={uploading || !methodData.title || !methodData.description}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-white px-6 py-3 text-slate-950 transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-gray-900 px-6 py-3 text-white transition-colors hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
                 >
                   <Plus size={20} />
-                  <span>{uploading ? 'Wird hinzugefügt...' : 'Methode zum Werkzeugkasten hinzufügen'}</span>
+                  <span>
+                    {uploading ? 'Wird hinzugefügt...' : 'Methode zum Werkzeugkasten hinzufügen'}
+                  </span>
                 </button>
               </div>
             </div>
