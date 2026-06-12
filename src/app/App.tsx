@@ -19,7 +19,7 @@ export default function App() {
     <HashRouter>
       <button
         onClick={() => setDark((prev) => !prev)}
-        className="fixed bottom-5 right-5 z-50 rounded-full border border-gray-300 bg-white p-4 text-gray-900 shadow-lg transition-colors hover:bg-gray-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:bg-slate-800"
+        className="fixed bottom-5 right-5 z-[9999] rounded-full border border-gray-300 bg-white p-4 text-gray-900 shadow-lg transition-colors hover:bg-gray-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:bg-slate-800"
         title={dark ? 'Light Mode aktivieren' : 'Dark Mode aktivieren'}
       >
         {dark ? <Sun size={24} /> : <Moon size={24} />}
