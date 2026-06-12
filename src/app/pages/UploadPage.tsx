@@ -1,5 +1,13 @@
 import { useState } from 'react';
-import { Upload, FileText, AlertCircle, CheckCircle, ArrowLeft, Plus, Sparkles } from 'lucide-react';
+import {
+  Upload,
+  FileText,
+  AlertCircle,
+  CheckCircle,
+  ArrowLeft,
+  Plus,
+  Sparkles,
+} from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { generateKeywordsString } from '../utils/keywordGenerator';
 
@@ -15,7 +23,6 @@ export function UploadPage() {
   const [uploadedPdfUrl, setUploadedPdfUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Manual method input form
   const [showManualForm, setShowManualForm] = useState(false);
   const [methodData, setMethodData] = useState({
     title: '',
@@ -27,8 +34,13 @@ export function UploadPage() {
     keywords: '',
     steps: '',
     tips: '',
-    examples: ''
+    examples: '',
   });
+
+  const inputClass =
+    'w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-white';
+
+  const labelClass = 'mb-1 block text-sm font-medium text-slate-300';
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -79,13 +91,15 @@ export function UploadPage() {
       const response = await fetch(`${API_BASE}/upload-pdf`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
         },
-        body: formData
+        body: formData,
       });
 
       if (!response.headers.get('content-type')?.includes('application/json')) {
-        throw new Error('Backend nicht verfügbar. Bitte deployen Sie zuerst die Supabase Edge Function.');
+        throw new Error(
+          'Backend nicht verfügbar. Bitte deployen Sie zuerst die Supabase Edge Function.'
+        );
       }
 
       const data = await response.json();
@@ -98,7 +112,6 @@ export function UploadPage() {
       setUploadedPdfUrl(data.fileUrl || null);
 
       alert(`✅ PDF erfolgreich hochgeladen!\n\n📄 Datei: ${data.fileName}\n\nDie PDF wurde gespeichert.`);
-
     } catch (err: any) {
       setError(err.message || 'Fehler beim Hochladen der PDF-Datei.');
     } finally {
@@ -112,7 +125,7 @@ export function UploadPage() {
       description: methodData.description,
       goal: methodData.goal,
       steps: methodData.steps,
-      category: methodData.category
+      category: methodData.category,
     });
 
     setMethodData({ ...methodData, keywords: generatedKeywords });
@@ -135,31 +148,43 @@ export function UploadPage() {
       goal: methodData.goal,
       duration: methodData.duration,
       participants: methodData.participants,
-      keywords: methodData.keywords.split(',').map(k => k.trim()).filter(Boolean),
-      steps: methodData.steps.split('\n').filter(Boolean).map((step, i) => ({
-        title: `Schritt ${i + 1}`,
-        description: step.trim()
-      })),
-      tips: methodData.tips.split('\n').map(t => t.trim()).filter(Boolean),
-      examples: methodData.examples.split('\n').map(e => e.trim()).filter(Boolean),
+      keywords: methodData.keywords
+        .split(',')
+        .map((k) => k.trim())
+        .filter(Boolean),
+      steps: methodData.steps
+        .split('\n')
+        .filter(Boolean)
+        .map((step, i) => ({
+          title: `Schritt ${i + 1}`,
+          description: step.trim(),
+        })),
+      tips: methodData.tips
+        .split('\n')
+        .map((t) => t.trim())
+        .filter(Boolean),
+      examples: methodData.examples
+        .split('\n')
+        .map((e) => e.trim())
+        .filter(Boolean),
       imageUrl: '/grafik-1.png',
       pdfUrl: uploadedPdfUrl,
       contactPerson: {
         name: 'Ansprechpartner',
         role: 'Methodenexperte',
-        email: 'kontakt@beispiel.de'
+        email: 'kontakt@beispiel.de',
       },
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     };
 
     try {
       const response = await fetch(`${API_BASE}/methods`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(newMethod)
+        body: JSON.stringify(newMethod),
       });
 
       if (!response.headers.get('content-type')?.includes('application/json')) {
@@ -167,7 +192,9 @@ export function UploadPage() {
         localMethods.push(newMethod);
         localStorage.setItem('customMethods', JSON.stringify(localMethods));
 
-        alert('✅ Methode lokal gespeichert!\n\n⚠️ Backend nicht verfügbar - die Methode wurde nur lokal gespeichert.');
+        alert(
+          '✅ Methode lokal gespeichert!\n\n⚠️ Backend nicht verfügbar - die Methode wurde nur lokal gespeichert.'
+        );
         navigate('/');
         return;
       }
@@ -180,13 +207,14 @@ export function UploadPage() {
 
       alert('✅ Methode erfolgreich hinzugefügt!');
       navigate('/');
-
     } catch (err: any) {
       const localMethods = JSON.parse(localStorage.getItem('customMethods') || '[]');
       localMethods.push(newMethod);
       localStorage.setItem('customMethods', JSON.stringify(localMethods));
 
-      alert('✅ Methode lokal gespeichert!\n\n⚠️ Fehler beim Backend-Upload - die Methode wurde nur lokal gespeichert.');
+      alert(
+        '✅ Methode lokal gespeichert!\n\n⚠️ Fehler beim Backend-Upload - die Methode wurde nur lokal gespeichert.'
+      );
       navigate('/');
     } finally {
       setUploading(false);
@@ -194,29 +222,33 @@ export function UploadPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="min-h-screen bg-slate-950 text-slate-100">
+      <header className="border-b border-slate-800 bg-slate-950">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <Link
             to="/"
-            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
+            className="mb-4 inline-flex items-center gap-2 text-slate-400 hover:text-white"
           >
             <ArrowLeft size={20} />
             <span>Zurück zum Werkzeugkasten</span>
           </Link>
-          <h1 className="text-2xl font-bold">Neue Methode hinzufügen</h1>
-          <p className="text-gray-600 mt-2">
+
+          <h1 className="text-2xl font-bold text-white">Neue Methode hinzufügen</h1>
+
+          <p className="mt-2 text-slate-400">
             Erstellen Sie eine neue Methode für Ihren Werkzeugkasten.
           </p>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white border border-gray-200 rounded-lg p-8 shadow-sm">
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center">
-            <Upload className="mx-auto mb-4 text-gray-400" size={48} />
-            <h3 className="text-lg font-semibold mb-2">PDF hochladen</h3>
-            <p className="text-gray-600 mb-6">
+      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="rounded-lg border border-slate-800 bg-slate-900 p-8 shadow-sm">
+          <div className="rounded-lg border-2 border-dashed border-slate-700 p-12 text-center">
+            <Upload className="mx-auto mb-4 text-slate-400" size={48} />
+
+            <h3 className="mb-2 text-lg font-semibold text-white">PDF hochladen</h3>
+
+            <p className="mb-6 text-slate-400">
               Laden Sie eine PDF-Datei hoch. Danach können Sie die Methode manuell ergänzen.
             </p>
 
@@ -230,15 +262,15 @@ export function UploadPage() {
 
             <label
               htmlFor="file-upload"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors cursor-pointer"
+              className="inline-flex cursor-pointer items-center gap-2 rounded-lg bg-white px-6 py-3 text-slate-950 transition-colors hover:bg-slate-200"
             >
               <FileText size={20} />
               <span>PDF auswählen</span>
             </label>
 
             {file && (
-              <div className="mt-4 text-sm text-gray-600">
-                Ausgewählt: <span className="font-medium">{file.name}</span>
+              <div className="mt-4 text-sm text-slate-400">
+                Ausgewählt: <span className="font-medium text-white">{file.name}</span>
               </div>
             )}
           </div>
@@ -247,7 +279,7 @@ export function UploadPage() {
             <button
               onClick={handleUpload}
               disabled={uploading}
-              className="w-full mt-6 px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-white px-6 py-3 text-slate-950 transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {uploading ? (
                 <>
@@ -264,9 +296,10 @@ export function UploadPage() {
           )}
 
           {uploadSuccess && (
-            <div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-start gap-3">
-              <CheckCircle className="text-green-600 flex-shrink-0" size={20} />
-              <div className="text-green-800 text-sm">
+            <div className="mt-6 flex items-start gap-3 rounded-lg border border-green-700 bg-green-950 p-4">
+              <CheckCircle className="flex-shrink-0 text-green-400" size={20} />
+
+              <div className="text-sm text-green-200">
                 <p className="font-medium">PDF erfolgreich hochgeladen.</p>
                 <p>Sie können jetzt unten die Methodendetails manuell eintragen.</p>
               </div>
@@ -274,47 +307,43 @@ export function UploadPage() {
           )}
 
           {error && (
-            <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
-              <AlertCircle className="text-red-600 flex-shrink-0" size={20} />
-              <p className="text-red-800 text-sm">{error}</p>
+            <div className="mt-6 flex items-start gap-3 rounded-lg border border-red-700 bg-red-950 p-4">
+              <AlertCircle className="flex-shrink-0 text-red-400" size={20} />
+              <p className="text-sm text-red-200">{error}</p>
             </div>
           )}
 
           <div className="mt-8 text-center">
             <button
               onClick={() => setShowManualForm(!showManualForm)}
-              className="text-gray-600 hover:text-gray-900 underline text-sm"
+              className="text-sm text-slate-400 underline hover:text-white"
             >
               {showManualForm ? 'Manuelle Eingabe ausblenden' : 'Methodendetails manuell eingeben'}
             </button>
           </div>
 
           {showManualForm && (
-            <div className="mt-8 bg-white border border-gray-200 rounded-lg p-6">
-              <h3 className="font-semibold text-lg mb-4">Methodendetails eingeben</h3>
+            <div className="mt-8 rounded-lg border border-slate-800 bg-slate-950 p-6">
+              <h3 className="mb-4 text-lg font-semibold text-white">Methodendetails eingeben</h3>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Titel *
-                  </label>
+                  <label className={labelClass}>Titel *</label>
                   <input
                     type="text"
                     value={methodData.title}
                     onChange={(e) => setMethodData({ ...methodData, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+                    className={inputClass}
                     placeholder="z.B. SCAMPER-Methode"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Kategorie *
-                  </label>
+                  <label className={labelClass}>Kategorie *</label>
                   <select
                     value={methodData.category}
                     onChange={(e) => setMethodData({ ...methodData, category: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+                    className={inputClass}
                   >
                     <option>Ideenfindung</option>
                     <option>Problemanalyse</option>
@@ -330,95 +359,86 @@ export function UploadPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Beschreibung *
-                  </label>
+                  <label className={labelClass}>Beschreibung *</label>
                   <textarea
                     value={methodData.description}
                     onChange={(e) => setMethodData({ ...methodData, description: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+                    className={inputClass}
                     rows={3}
                     placeholder="Kurze Beschreibung der Methode..."
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Ziel
-                  </label>
+                  <label className={labelClass}>Ziel</label>
                   <textarea
                     value={methodData.goal}
                     onChange={(e) => setMethodData({ ...methodData, goal: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+                    className={inputClass}
                     rows={2}
                     placeholder="Was soll mit dieser Methode erreicht werden?"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Dauer
-                    </label>
+                    <label className={labelClass}>Dauer</label>
                     <input
                       type="text"
                       value={methodData.duration}
                       onChange={(e) => setMethodData({ ...methodData, duration: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+                      className={inputClass}
                       placeholder="z.B. 30-60 Min"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Teilnehmer
-                    </label>
+                    <label className={labelClass}>Teilnehmer</label>
                     <input
                       type="text"
                       value={methodData.participants}
-                      onChange={(e) => setMethodData({ ...methodData, participants: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+                      onChange={(e) =>
+                        setMethodData({ ...methodData, participants: e.target.value })
+                      }
+                      className={inputClass}
                       placeholder="z.B. 4-8 Personen"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Schritte (ein Schritt pro Zeile)
-                  </label>
+                  <label className={labelClass}>Schritte, ein Schritt pro Zeile</label>
                   <textarea
                     value={methodData.steps}
                     onChange={(e) => setMethodData({ ...methodData, steps: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 font-mono text-sm"
+                    className={`${inputClass} font-mono text-sm`}
                     rows={5}
-                    placeholder="Problem definieren&#10;Ursachen sammeln&#10;Lösungen entwickeln"
+                    placeholder={'Problem definieren\nUrsachen sammeln\nLösungen entwickeln'}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tipps (ein Tipp pro Zeile)
-                  </label>
+                  <label className={labelClass}>Tipps, ein Tipp pro Zeile</label>
                   <textarea
                     value={methodData.tips}
                     onChange={(e) => setMethodData({ ...methodData, tips: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 font-mono text-sm"
+                    className={`${inputClass} font-mono text-sm`}
                     rows={3}
-                    placeholder="Tipp 1&#10;Tipp 2"
+                    placeholder={'Tipp 1\nTipp 2'}
                   />
                 </div>
 
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Keywords (kommagetrennt)
+                  <div className="mb-1 flex items-center justify-between">
+                    <label className="block text-sm font-medium text-slate-300">
+                      Keywords, kommagetrennt
                     </label>
+
                     <button
                       type="button"
                       onClick={handleGenerateKeywords}
                       disabled={!methodData.title || !methodData.description}
-                      className="inline-flex items-center gap-1 px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="inline-flex items-center gap-1 rounded bg-slate-800 px-3 py-1 text-xs text-slate-200 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
                       title="Keywords automatisch generieren"
                     >
                       <Sparkles size={14} />
@@ -430,32 +450,30 @@ export function UploadPage() {
                     type="text"
                     value={methodData.keywords}
                     onChange={(e) => setMethodData({ ...methodData, keywords: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+                    className={inputClass}
                     placeholder="Kreativität, Innovation, Brainstorming"
                   />
 
-                  <p className="text-xs text-gray-500 mt-1">
-                    💡 Tipp: Klicken Sie auf "Automatisch generieren" oder geben Sie eigene Keywords ein
+                  <p className="mt-1 text-xs text-slate-500">
+                    💡 Tipp: Klicken Sie auf "Automatisch generieren" oder geben Sie eigene Keywords ein.
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Beispiele (ein Beispiel pro Zeile)
-                  </label>
+                  <label className={labelClass}>Beispiele, ein Beispiel pro Zeile</label>
                   <textarea
                     value={methodData.examples}
                     onChange={(e) => setMethodData({ ...methodData, examples: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 font-mono text-sm"
+                    className={`${inputClass} font-mono text-sm`}
                     rows={3}
-                    placeholder="Beispiel 1&#10;Beispiel 2"
+                    placeholder={'Beispiel 1\nBeispiel 2'}
                   />
                 </div>
 
                 <button
                   onClick={handleCreateMethod}
                   disabled={uploading || !methodData.title || !methodData.description}
-                  className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-white px-6 py-3 text-slate-950 transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Plus size={20} />
                   <span>{uploading ? 'Wird hinzugefügt...' : 'Methode zum Werkzeugkasten hinzufügen'}</span>
