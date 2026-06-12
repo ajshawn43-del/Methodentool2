@@ -6,19 +6,28 @@ import { UploadPage } from './pages/UploadPage';
 import { DebugPage } from './pages/DebugPage';
 
 export default function App() {
-  const [dark, setDark] = useState(false);
+  const [dark, setDark] = useState(() => {
+    return localStorage.getItem('theme') === 'dark';
+  });
 
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', dark);
+    if (dark) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
   }, [dark]);
 
   return (
     <HashRouter>
       <button
         onClick={() => setDark(!dark)}
-        className="fixed bottom-5 right-5 z-50 rounded-full bg-gray-900 text-white p-3 shadow-lg dark:bg-white dark:text-gray-900"
+        className="fixed bottom-5 right-5 z-50 rounded-full border border-gray-300 bg-white p-4 text-gray-900 shadow-lg transition-colors hover:bg-gray-100 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:hover:bg-slate-800"
+        title={dark ? 'Light Mode aktivieren' : 'Dark Mode aktivieren'}
       >
-        {dark ? <Sun size={22} /> : <Moon size={22} />}
+        {dark ? <Sun size={24} /> : <Moon size={24} />}
       </button>
 
       <Routes>
