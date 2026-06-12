@@ -57,12 +57,12 @@ export function MethodCard({
       onClick={onClick}
       className={`relative overflow-hidden rounded-xl bg-slate-900 transition-all cursor-pointer hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/40 ${
         isPinned
-          ? 'border-2 border-white shadow-lg ring-2 ring-white/10'
+          ? 'border border-slate-500 shadow-lg shadow-black/30 ring-1 ring-slate-600/40'
           : 'border border-slate-800'
       }`}
     >
       {isPinned && (
-        <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-center gap-1 bg-white px-3 py-1 text-xs text-slate-950">
+        <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-center gap-1 bg-slate-800 px-3 py-1 text-xs text-slate-200 border-b border-slate-700">
           <Pin size={12} fill="currentColor" />
           <span>Angepinnt</span>
         </div>
@@ -87,7 +87,7 @@ export function MethodCard({
           onClick={handlePinClick}
           className={`absolute left-3 top-3 rounded-full p-2 transition-colors ${
             isPinned
-              ? 'bg-white text-slate-950'
+              ? 'bg-slate-800 text-white border border-slate-600'
               : 'bg-slate-950/80 text-slate-200 hover:bg-slate-950'
           }`}
           title={isPinned ? 'Von Dashboard entfernen' : 'Zu Dashboard hinzufügen'}
