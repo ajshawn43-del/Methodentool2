@@ -36,12 +36,10 @@ export function HomePage() {
       }
 
       const data = await response.json();
-
       const localMethods = JSON.parse(localStorage.getItem('customMethods') || '[]');
       const backendMethods = data.methods || [];
-      const allCustomMethods = [...backendMethods, ...localMethods];
 
-      setCustomMethods(allCustomMethods);
+      setCustomMethods([...backendMethods, ...localMethods]);
     } catch (error) {
       const localMethods = JSON.parse(localStorage.getItem('customMethods') || '[]');
       setCustomMethods(localMethods);
@@ -49,7 +47,6 @@ export function HomePage() {
   };
 
   const allMethods = [...staticMethods, ...customMethods];
-
   const categories = ['Alle', ...Array.from(new Set(allMethods.map((m) => m.category)))];
 
   const filteredMethods = useMemo(() => {
@@ -82,18 +79,20 @@ export function HomePage() {
   const selectedMethodData = allMethods.find((m) => m.id === selectedMethod);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      <header className="sticky top-0 z-40 border-b border-slate-800 bg-slate-950/95 backdrop-blur">
+    <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-slate-950 dark:text-slate-100">
+      <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/95 backdrop-blur dark:border-slate-800 dark:bg-slate-950/95">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="mb-6 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <BookOpen size={32} className="text-white" />
-              <h1 className="text-2xl font-bold text-white">Methoden-Werkzeugkasten</h1>
+              <BookOpen size={32} className="text-gray-900 dark:text-white" />
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Methoden-Werkzeugkasten
+              </h1>
             </div>
 
             <Link
               to="/upload"
-              className="flex items-center gap-2 rounded-lg bg-white px-4 py-2 text-slate-950 transition-colors hover:bg-slate-200"
+              className="flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-white transition-colors hover:bg-gray-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
             >
               <Upload size={20} />
               <span>Methode hochladen</span>
@@ -103,7 +102,7 @@ export function HomePage() {
           <div className="flex flex-col gap-4 sm:flex-row">
             <div className="relative flex-1">
               <Search
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-400"
                 size={20}
               />
 
@@ -112,17 +111,17 @@ export function HomePage() {
                 placeholder="Methode suchen..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full rounded-lg border border-slate-700 bg-slate-900 py-2 pl-10 pr-4 text-white placeholder-slate-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-white"
+                className="w-full rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-4 text-gray-900 placeholder-gray-400 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:placeholder-slate-400 dark:focus:ring-white"
               />
             </div>
 
             <div className="flex items-center gap-2">
-              <Filter size={20} className="text-slate-300" />
+              <Filter size={20} className="text-gray-600 dark:text-slate-300" />
 
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="rounded-lg border border-slate-700 bg-slate-900 px-4 py-2 text-white focus:border-transparent focus:outline-none focus:ring-2 focus:ring-white"
+                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-900 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-gray-900 dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:ring-white"
               >
                 {categories.map((cat) => (
                   <option key={cat} value={cat}>
@@ -136,8 +135,8 @@ export function HomePage() {
               onClick={() => setShowPinnedOnly(!showPinnedOnly)}
               className={`flex items-center gap-2 rounded-lg border px-4 py-2 transition-colors ${
                 showPinnedOnly
-                  ? 'border-white bg-white text-slate-950'
-                  : 'border-slate-700 bg-slate-900 text-slate-200 hover:bg-slate-800'
+                  ? 'border-gray-900 bg-gray-900 text-white dark:border-white dark:bg-white dark:text-slate-950'
+                  : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'
               }`}
             >
               <Pin size={20} fill={showPinnedOnly ? 'currentColor' : 'none'} />
@@ -150,12 +149,12 @@ export function HomePage() {
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-6 flex items-center justify-between">
-          <p className="text-slate-400">
+          <p className="text-gray-600 dark:text-slate-400">
             {filteredMethods.length} {filteredMethods.length === 1 ? 'Methode' : 'Methoden'} gefunden
           </p>
 
           {pinnedMethods.length > 0 && !showPinnedOnly && (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-gray-500 dark:text-slate-500">
               {pinnedMethods.length} davon angepinnt
             </p>
           )}
@@ -181,8 +180,8 @@ export function HomePage() {
 
         {filteredMethods.length === 0 && (
           <div className="py-12 text-center">
-            <p className="text-lg text-slate-400">Keine Methoden gefunden.</p>
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="text-lg text-gray-500 dark:text-slate-400">Keine Methoden gefunden.</p>
+            <p className="mt-2 text-sm text-gray-400 dark:text-slate-500">
               Versuchen Sie einen anderen Suchbegriff oder Filter.
             </p>
           </div>
